@@ -4,19 +4,22 @@
   "type": "module",
   "version": "1.0.0",
   "scripts": {
-    "clean:pacts": "node -e \"require('fs').rmSync('pacts',{recursive:true,force:true})\"",
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
-    "pact:consumer:good": "npm run clean:pacts && cross-env NODE_OPTIONS=--experimental-vm-modules jest src/consumer/consumer.pact.test.js",
-    "pact:consumer": "npm run pact:consumer:good",                           
+    "clean:pacts": "node -e \"require('fs').rmSync('pacts',{recursive:true,force:true})\"",
+
+    "pact:consumer": "npm run clean:pacts && cross-env NODE_OPTIONS=--experimental-vm-modules jest src/consumer/consumer.pact.test.js",
     "pact:consumer:bad": "npm run clean:pacts && cross-env NODE_OPTIONS=--experimental-vm-modules jest src/consumer/consumer.pact.bad.test.js",
+
     "provider:start": "node src/provider/server.js",
     "pact:verify": "node src/provider/verify.js",
-    "pact:verify:cli": "node scripts/verify-cli.cjs",
     "pact:publish": "node scripts/publish.cjs",
     "pact:can-i-deploy": "node scripts/can-i-deploy.cjs",
+
     "demo:bad:publish": "cross-env-shell BRANCH=demo-bad CONSUMER_VERSION_SUFFIX=bad \"npm run pact:consumer:bad && npm run pact:publish\"",
     "demo:bad:verify": "cross-env PROVIDER_BASE_URL=http://127.0.0.1:9010 CONSUMER_BRANCH=demo-bad PROVIDER_BRANCH=main npm run pact:verify",
-    "demo:bad": "npm run demo:bad:publish && npm run demo:bad:verify"
+
+    "demo:good:publish": "cross-env-shell BRANCH=main CONSUMER_VERSION_SUFFIX=good \"npm run pact:consumer && npm run pact:publish\"",
+    "demo:good:verify": "cross-env PROVIDER_BASE_URL=http://127.0.0.1:9010 CONSUMER_BRANCH=main PROVIDER_BRANCH=main npm run pact:verify"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^15.0.1",
