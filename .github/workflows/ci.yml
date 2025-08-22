@@ -1,0 +1,50 @@
+name: Pact CI
+on:
+  push: { branches: [ main ] }
+  pull_request:
+jobs:
+  consumer_publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - run: npm run pact:consumer
+      - name: Publish pact
+        env:
+          PACT_BROKER_BASE_URL: ${{ secrets.PACT_BROKER_BASE_URL }}
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+          BRANCH: ${{ github.ref_name }}
+          CONSUMER_VERSION: ${{ github.sha }}
+        run: npm run pact:publish
+
+  provider_verify:
+    needs: consumer_publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - name: Start provider
+        env: { PORT: 9001 }
+        run: |
+          node src/provider/server.js &
+          for i in {1..30}; do curl -sf http://127.0.0.1:9001/health && break; sleep 1; done
+      - name: Verify provider
+        env:
+          PACT_BROKER_BASE_URL: ${{ secrets.PACT_BROKER_BASE_URL }}
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+          PROVIDER_BASE_URL: http://127.0.0.1:9001
+          PROVIDER_VERSION: ${{ github.sha }}
+          PROVIDER_BRANCH: ${{ github.ref_name }}
+          BRANCH: ${{ github.ref_name }}
+        run: npm run pact:verify
+      - name: Can I deploy (optional)
+        env:
+          PACT_BROKER_BASE_URL: ${{ secrets.PACT_BROKER_BASE_URL }}
+          PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
+          PROVIDER_VERSION: ${{ github.sha }}
+          ENVIRONMENT: test
+        run: npm run pact:can-i-deploy
