@@ -1,4 +1,4 @@
-# CDCT-JS — Consumer-Driven Contract Testing (Pact) Demo
+# Consumer-Driven Contract Testing (Pact) - JavaScript-Node
 
 A minimal, production-style project showing how to do Consumer-Driven Contract Testing (CDCT) with Pact and API Hub for Contract Testing (aka the Pact Broker), locally and in GitHub Actions.  
 Pacticipants (as they appear in API Hub for Contract Testing): **CDCT-JS-Consumer ↔ CDCT-JS-Provider**
