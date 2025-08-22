@@ -14,7 +14,7 @@ const envName = process.env.ENVIRONMENT || 'test';
 
 const args = [
   'can-i-deploy',
-  '--pacticipant', 'ProviderService',
+  '--pacticipant', 'CDCT-JS-Provider',
   '--version', providerVersion,
   '--to-environment', envName,
   '--broker-base-url', brokerBaseUrl,

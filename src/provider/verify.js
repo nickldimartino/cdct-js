@@ -28,7 +28,7 @@ const consumerBranch  = process.env.CONSUMER_BRANCH || process.env.GITHUB_REF_NA
 
   const verifier = new Verifier({
     providerBaseUrl,
-    provider: 'ProviderService',
+    provider: 'CDCT-JS-Provider',
 
     pactBrokerUrl: brokerBaseUrl,
     pactBrokerToken: brokerToken,

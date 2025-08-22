@@ -5,8 +5,8 @@ import { getUser } from './apiClient.js';
 const { like } = MatchersV3;
 
 const pact = new PactV3({
-  consumer: 'ConsumerApp',
-  provider: 'ProviderService',
+  consumer: 'CDCT-JS-Consumer',
+  provider: 'CDCT-JS-Provider',
   dir: path.resolve(process.cwd(), 'pacts')
 });
 
