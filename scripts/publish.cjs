@@ -8,25 +8,29 @@ function req(name) {
 }
 
 const brokerBaseUrl = req('PACT_BROKER_BASE_URL');
-const brokerToken   = req('PACT_BROKER_TOKEN');
-const branch =
-  process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || process.env.BRANCH || 'main';
+const brokerToken = req('PACT_BROKER_TOKEN');
+const branch = process.env.BRANCH || 'main';
 
-// unique consumer version: GH SHA → git → timestamp
-let consumerVersion = process.env.CONSUMER_VERSION || process.env.GITHUB_SHA;
-if (!consumerVersion) {
+// unique consumer version (prefer git SHA, fallback to timestamp)
+let consumerVersion = process.env.CONSUMER_VERSION;
+if (!consumerVersion || consumerVersion.toLowerCase() === 'local') {
   try {
     const r = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' });
     if (r.status === 0) consumerVersion = r.stdout.trim();
-  } catch {}
+  } catch { }
 }
-if (!consumerVersion) {
+if (!consumerVersion || consumerVersion.toLowerCase() === 'local') {
   consumerVersion = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
 }
+
+// NEW: optional suffix so “bad” and “good” can coexist for the same commit
+const suffix = process.env.CONSUMER_VERSION_SUFFIX ? `-${process.env.CONSUMER_VERSION_SUFFIX}` : '';
+consumerVersion = `${consumerVersion}${suffix}`;
 
 const args = [
   'publish', './pacts',
   '--branch', branch,
+  '--tag', branch,
   '--consumer-app-version', consumerVersion,
   '--broker-base-url', brokerBaseUrl,
   '--broker-token', brokerToken
