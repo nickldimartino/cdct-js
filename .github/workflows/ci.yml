@@ -28,15 +28,15 @@ jobs:
         with: { node-version: '20', cache: 'npm' }
       - run: npm ci
       - name: Start provider
-        env: { PORT: 9001 }
+        env: { PORT: 9010 }
         run: |
           node src/provider/server.js &
-          for i in {1..30}; do curl -sf http://127.0.0.1:9001/health && break; sleep 1; done
+          for i in {1..30}; do curl -sf http://127.0.0.1:9010/health && break; sleep 1; done
       - name: Verify provider
         env:
           PACT_BROKER_BASE_URL: ${{ secrets.PACT_BROKER_BASE_URL }}
           PACT_BROKER_TOKEN: ${{ secrets.PACT_BROKER_TOKEN }}
-          PROVIDER_BASE_URL: http://127.0.0.1:9001
+          PROVIDER_BASE_URL: http://127.0.0.1:9010
           PROVIDER_VERSION: ${{ github.sha }}
           PROVIDER_BRANCH: ${{ github.ref_name }}
           BRANCH: ${{ github.ref_name }}
