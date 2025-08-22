@@ -1,3 +1,4 @@
+// scripts/publish.cjs
 require('dotenv').config({ path: '.env' });
 const { spawnSync } = require('child_process');
 
@@ -8,31 +9,34 @@ function req(name) {
 }
 
 const brokerBaseUrl = req('PACT_BROKER_BASE_URL');
-const brokerToken = req('PACT_BROKER_TOKEN');
-const branch = process.env.BRANCH || 'main';
+const brokerToken   = req('PACT_BROKER_TOKEN');
 
-// unique consumer version (prefer git SHA, fallback to timestamp)
-let consumerVersion = process.env.CONSUMER_VERSION;
-if (!consumerVersion || consumerVersion.toLowerCase() === 'local') {
+// Source branch from env (CLI/CI or local), default main
+const branch = process.env.BRANCH || process.env.CONSUMER_BRANCH || 'main';
+
+// Build a unique consumer version
+let versionBase = process.env.CONSUMER_VERSION; // e.g. CI will pass github.sha
+if (!versionBase || versionBase.toLowerCase() === 'local') {
   try {
     const r = spawnSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' });
-    if (r.status === 0) consumerVersion = r.stdout.trim();
-  } catch { }
+    if (r.status === 0) versionBase = r.stdout.trim();
+  } catch {}
 }
-if (!consumerVersion || consumerVersion.toLowerCase() === 'local') {
-  consumerVersion = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+if (!versionBase) {
+  versionBase = new Date().toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
 }
 
-// NEW: optional suffix so “bad” and “good” can coexist for the same commit
+// Optional suffix for demos: e.g. "-bad" or "-good"
 const suffix = process.env.CONSUMER_VERSION_SUFFIX ? `-${process.env.CONSUMER_VERSION_SUFFIX}` : '';
-consumerVersion = `${consumerVersion}${suffix}`;
+const consumerVersion = `${versionBase}${suffix}`;
 
+// Build CLI args
 const args = [
   'publish', './pacts',
   '--branch', branch,
   '--tag', branch,
   '--consumer-app-version', consumerVersion,
-  '--broker-base-url', brokerBaseUrl,
+  '--broker-base-url', brokerBaseUrl,           // ✅ correct flag
   '--broker-token', brokerToken
 ];
 
