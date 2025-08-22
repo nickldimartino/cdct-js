@@ -1,64 +1,63 @@
-// src/provider/verify.js (ESM)
+import 'dotenv/config';
 import { Verifier } from '@pact-foundation/pact';
 
-const branch =
-  process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || process.env.BRANCH || 'main';
-const shortSha = (process.env.GITHUB_SHA || '').slice(0, 7);
+function req(name) {
+  const v = process.env[name];
+  if (!v) {
+    console.error(`❌ Missing required env: ${name}`);
+    process.exit(1);
+  }
+  return v;
+}
 
 const providerBaseUrl = process.env.PROVIDER_BASE_URL || 'http://127.0.0.1:9010';
-const brokerBaseUrl   = process.env.PACT_BROKER_BASE_URL;
-const brokerToken     = process.env.PACT_BROKER_TOKEN;
+const brokerBaseUrl   = req('PACT_BROKER_BASE_URL');
+const brokerToken     = req('PACT_BROKER_TOKEN');
 
-const providerVersion = process.env.PROVIDER_VERSION || shortSha || 'local';
-const providerBranch  = process.env.PROVIDER_BRANCH || branch;
+const providerVersion = process.env.PROVIDER_VERSION || process.env.GITHUB_SHA || 'local';
+const providerBranch  = process.env.PROVIDER_BRANCH || process.env.GITHUB_REF_NAME || process.env.BRANCH || 'main';
+const consumerBranch  = process.env.CONSUMER_BRANCH || process.env.GITHUB_REF_NAME || process.env.BRANCH || 'main';
 
-// 👇 This is the missing piece
-const providerName    = process.env.PROVIDER_NAME || 'ProviderService';
+(async () => {
+  console.log('🔎 Starting Pact provider verification…');
+  console.log({
+    providerBaseUrl, brokerBaseUrl,
+    hasToken: !!brokerToken,
+    providerVersion, consumerBranch, providerBranch
+  });
 
-if (!brokerBaseUrl || !brokerToken) {
-  console.error('❌ Missing PACT_BROKER_BASE_URL or PACT_BROKER_TOKEN');
-  process.exit(1);
-}
+  const verifier = new Verifier({
+    providerBaseUrl,
+    provider: 'ProviderService',
 
-console.log('🔎 Starting Pact provider verification…');
-console.log({
-  providerBaseUrl,
-  brokerBaseUrl,
-  hasToken: !!brokerToken,
-  providerVersion,
-  consumerBranch: branch,
-  providerBranch,
-  providerName
-});
+    pactBrokerUrl: brokerBaseUrl,
+    pactBrokerToken: brokerToken,
 
-const verifier = new Verifier({
-  // Required when verifying from a Broker
-  provider: providerName,
+    publishVerificationResult: true,
+    providerVersion,
+    providerVersionBranch: providerBranch,
 
-  providerBaseUrl,
+    enablePending: true,
+    includeWipPactsSince: '2020-01-01',
+    consumerVersionSelectors: [
+      { branch: consumerBranch, latest: true }
+    ],
 
-  pactBrokerUrl: brokerBaseUrl,
-  pactBrokerToken: brokerToken,
+    stateHandlers: {
+      'User with id 123 exists': async () => {},
+      'User with id 999 does not exist': async () => {}
+    },
 
-  // Select consumer pacts by branch/tag
-  consumerVersionSelectors: [{ branch, latest: true }],
+    logLevel: 'info'
+  });
 
-  // Good defaults
-  enablePending: true,
-  includeWipPactsSince: '2020-01-01',
-
-  // Publish results back to Broker
-  publishVerificationResult: true,
-  providerVersion,
-  providerVersionBranch: providerBranch
-});
-
-try {
-  await verifier.verifyProvider();
-  console.log('✅ Pact Verification Complete!');
-  process.exit(0);
-} catch (e) {
-  console.error('❌ Pact Verification Failed');
-  console.error(e);
-  process.exit(1);
-}
+  try {
+    const summary = await verifier.verifyProvider();
+    console.log('✅ Pact Verification Complete!');
+    console.log(summary);
+  } catch (err) {
+    console.error('❌ Pact Verification Failed');
+    console.error(err);
+    process.exit(1);
+  }
+})();

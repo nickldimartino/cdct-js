@@ -1,29 +1,29 @@
 {
   "name": "cdct-pv",
-  "version": "1.0.0",
+  "private": true,
   "type": "module",
-  "description": "Minimal Pact JS CDCT example (consumer + provider + broker)",
-  "main": "index.js",
+  "version": "1.0.0",
   "scripts": {
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "pact:consumer": "cross-env NODE_OPTIONS=--experimental-vm-modules jest src/consumer/consumer.pact.test.js",
-    "pact:publish": "node scripts/publish.cjs",
     "provider:start": "node src/provider/server.js",
     "pact:verify": "node src/provider/verify.js",
+    "pact:publish": "node scripts/publish.cjs",
     "pact:can-i-deploy": "node scripts/can-i-deploy.cjs"
   },
   "devDependencies": {
     "@pact-foundation/pact": "^15.0.1",
     "@pact-foundation/pact-cli": "^16.1.2",
-    "cross-env": "^10.0.0",
-    "dotenv": "^17.2.1",
+    "cross-env": "^7.0.3",
     "jest": "^30.0.5"
   },
   "dependencies": {
+    "dotenv": "^16.4.5",
     "express": "^5.1.0"
   },
   "jest": {
     "testEnvironment": "node",
-    "verbose": true
+    "verbose": true,
+    "transform": {}
   }
 }

@@ -1,4 +1,3 @@
-# .github/workflows/ci.yml
 name: CI
 
 on:
@@ -6,21 +5,30 @@ on:
     branches: [ main ]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   consumer_publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
 
       - name: Generate pact
         run: npm run pact:consumer
+        env:
+          PACT_DO_NOT_TRACK: 'true'
 
       - name: Publish pact to Broker
         run: npm run pact:publish
@@ -29,17 +37,21 @@ jobs:
           PACT_BROKER_TOKEN:    ${{ secrets.PACT_BROKER_TOKEN }}
           BRANCH:               ${{ github.ref_name }}
           CONSUMER_VERSION:     ${{ github.sha }}
+          PACT_DO_NOT_TRACK:    'true'
 
   provider_verify:
     runs-on: ubuntu-latest
     needs: [ consumer_publish ]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
 
       - run: npm ci
 
@@ -47,9 +59,17 @@ jobs:
         run: |
           node src/provider/server.js &
           for i in {1..30}; do
-            curl -fsS http://127.0.0.1:9010/health && break
+            if curl -fsS http://127.0.0.1:9010/health > /dev/null; then
+              echo "Provider is up"
+              exit 0
+            fi
+            echo "Waiting for provider..."
             sleep 1
           done
+          echo "Provider failed to start in time" >&2
+          exit 1
+        env:
+          PORT: 9010
 
       - name: Verify provider (Node verifier)
         run: npm run pact:verify
@@ -59,16 +79,7 @@ jobs:
           PACT_BROKER_TOKEN:     ${{ secrets.PACT_BROKER_TOKEN }}
           PROVIDER_VERSION:      ${{ github.sha }}
           PROVIDER_BRANCH:       ${{ github.ref_name }}
-
-      # or, if you prefer the CLI verifier instead of Node verifier:
-      # - name: Verify provider (CLI)
-      #   run: npm run pact:verify:cli
-      #   env:
-      #     PROVIDER_BASE_URL:     http://127.0.0.1:9010
-      #     PACT_BROKER_BASE_URL:  ${{ secrets.PACT_BROKER_BASE_URL }}
-      #     PACT_BROKER_TOKEN:     ${{ secrets.PACT_BROKER_TOKEN }}
-      #     PROVIDER_VERSION:      ${{ github.sha }}
-      #     PROVIDER_BRANCH:       ${{ github.ref_name }}
+          PACT_DO_NOT_TRACK:     'true'
 
       - name: Can I deploy?
         run: npm run pact:can-i-deploy
@@ -77,3 +88,4 @@ jobs:
           PACT_BROKER_TOKEN:     ${{ secrets.PACT_BROKER_TOKEN }}
           ENVIRONMENT:           test
           PROVIDER_VERSION:      ${{ github.sha }}
+          PACT_DO_NOT_TRACK:     'true'
