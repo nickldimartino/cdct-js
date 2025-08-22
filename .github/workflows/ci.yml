@@ -47,14 +47,14 @@ jobs:
         run: |
           node src/provider/server.js &
           for i in {1..30}; do
-            curl -fsS http://127.0.0.1:9001/health && break
+            curl -fsS http://127.0.0.1:9010/health && break
             sleep 1
           done
 
       - name: Verify provider (Node verifier)
         run: npm run pact:verify
         env:
-          PROVIDER_BASE_URL:     http://127.0.0.1:9001
+          PROVIDER_BASE_URL:     http://127.0.0.1:9010
           PACT_BROKER_BASE_URL:  ${{ secrets.PACT_BROKER_BASE_URL }}
           PACT_BROKER_TOKEN:     ${{ secrets.PACT_BROKER_TOKEN }}
           PROVIDER_VERSION:      ${{ github.sha }}
@@ -64,7 +64,7 @@ jobs:
       # - name: Verify provider (CLI)
       #   run: npm run pact:verify:cli
       #   env:
-      #     PROVIDER_BASE_URL:     http://127.0.0.1:9001
+      #     PROVIDER_BASE_URL:     http://127.0.0.1:9010
       #     PACT_BROKER_BASE_URL:  ${{ secrets.PACT_BROKER_BASE_URL }}
       #     PACT_BROKER_TOKEN:     ${{ secrets.PACT_BROKER_TOKEN }}
       #     PROVIDER_VERSION:      ${{ github.sha }}

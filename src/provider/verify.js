@@ -5,7 +5,7 @@ const branch =
   process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || process.env.BRANCH || 'main';
 const shortSha = (process.env.GITHUB_SHA || '').slice(0, 7);
 
-const providerBaseUrl = process.env.PROVIDER_BASE_URL || 'http://127.0.0.1:9001';
+const providerBaseUrl = process.env.PROVIDER_BASE_URL || 'http://127.0.0.1:9010';
 const brokerBaseUrl   = process.env.PACT_BROKER_BASE_URL;
 const brokerToken     = process.env.PACT_BROKER_TOKEN;
 
